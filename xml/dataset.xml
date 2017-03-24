@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Maj : 24/03/2017 -->
+
+<intent>
+
+	<greetings> 	</greetings>
+	
+	<greetings>Hello</greetings>
+	<greetings>Hi</greetings>
+	<greetings>Yop</greetings>
+	<greetings>Plop</greetings>
+	<greetings>Bonjour</greetings>
+	<greetings>Salut</greetings>
+	<greetings>slt</greetings>
+	
+	<booking> </booking>
+	
+	<booking>réserver</booking>
+	<booking>reservation</booking>
+	<booking></booking>
+	<booking> </booking>
+	<booking> </booking>
+	<booking> </booking>
+	
+	<information></information>
+	
+
+
+</intent>
+
+<expression>
+
+</expression>
+
+<expression>Bonjour, comment allez-vous ?</expression>
+<expression>Bonjour, à qu'elle heure est le prochaine train pour Paris Saint-Lazare</expression>
+
+<entities>
+
+	<date> </date>
+	<mail> </mail>
+	<time> </time>
+	<pronoum> </pronoum>
+	<person> </person>
+	<number> </number>
+	<color>  </color>
+	<city> </city>
+
+</entities>
