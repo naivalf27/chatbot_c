@@ -7,11 +7,18 @@
 #include <unistd.h>    //write
 #include <pthread.h> //for threading , link with lpthread
  
+
+typedef char bool;
+#define true 1
+#define false 0
+
 //the thread function
 void *connection_handler(void *);
 
 char* bot(const char *);
- 
+bool equal(const char *,const char *);
+
+
 int main(int argc , char *argv[]) {
   int socket_desc , client_sock , c , *new_sock;
   struct sockaddr_in server , client;
@@ -77,7 +84,6 @@ void *connection_handler(void *socket_desc) {
   //Receive a message from client
   while( read(sock, client_message, sizeof(client_message)) > 0) {
     char *t = bot(client_message);
-    printf("%lu\n", strlen(t));
     write(sock , t , strlen(t));
     memset(client_message, 0, sizeof(client_message));
     // memset(t, 0, sizeof(t));
@@ -101,6 +107,26 @@ char* bot(const char* msg) {
   char *message;
   // memset(message, 0, sizeof(message));
   // strcpy(message, "il faut faire ça");
-  message = "il faut faire ça";
+  if(equal(msg,"salut ça va ?")){
+    message = "oui et toi ?";
+  } else {
+    message = "il faut faire ça";
+  }
   return message;
-} 
+}
+
+bool equal(const char *a,const char *b)
+{
+  unsigned len = strlen(b);
+  printf("a = %lu\n", strlen(a));
+  printf("b = %lu\n", strlen(b));
+  if (strlen(a) != (strlen(b)+1))
+    return false;
+
+  for (unsigned i = 0; i < len; i += 1)
+  {
+    if (a[i] != b[i])
+      return false; /* strings are not equal */
+  }
+  return true;
+}
