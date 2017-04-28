@@ -7,6 +7,8 @@
 #include <unistd.h>    //write
 #include <pthread.h> //for threading , link with lpthread
 #include <signal.h>
+#include <errno.h>
+#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
  
 
 typedef char bool;
@@ -26,10 +28,10 @@ struct thread_args {
 };
 
 struct thread_args* threads;
-int position;
+int position, socket_desc;
 
 int main(int argc , char *argv[]) {
-  int socket_desc , client_sock , c , *new_sock;
+  int client_sock , c , *new_sock;
   struct sockaddr_in server , client;
 
   signal(SIGINT, intHandler);
@@ -105,12 +107,13 @@ void intHandler(int dummy) {
       printf( "%p\n", args.thread );
       int sock = *(int*)args.sock;
       printf("sock = %d\n", sock);
-      fflush(stdout);
       close(sock);
       pthread_cancel(thread);
       pthread_join(thread, NULL);
     }
+    close(socket_desc);
     free(threads);
+    fflush(stdout);
     exit(0);
 }
  
@@ -126,22 +129,40 @@ void *connection_handler(void *context) {
   int sock = *(int*)args->sock;
   printf("sock = %d\n", sock);
 
-  int read_size;
+  fd_set readfds;
+  int max_sd;
   char client_message[2000];
 
-  //Receive a message from client
-  while( read(sock, client_message, sizeof(client_message)) > 0) {
-    char *t = bot(client_message);
-    write(sock , t , strlen(t));
+  while(true) {
+    FD_ZERO(&readfds);
+        //add master socket to set
+    FD_SET(sock, &readfds);
+    max_sd = sock;
     memset(client_message, 0, sizeof(client_message));
-    // memset(t, 0, sizeof(t));
-  }
-   
-  if(read_size == 0) {
-      puts("Client disconnected");
-      fflush(stdout);
-  } else if(read_size == -1) {
-      perror("recv failed");
+    int activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL);
+    if ((activity < 0) && (errno!=EINTR)) 
+    {
+      printf("select error");
+    }
+
+    if (FD_ISSET(sock, &readfds)){
+      int result = read(sock, client_message, sizeof(client_message));
+      if( result < 0) {
+        puts("recv failed");
+        break;
+      } else if (result == 0){
+        puts("Client disconnected");
+        fflush(stdout);
+        break;
+      } else {
+        char *retour_client = bot(client_message);
+        if( write(sock , retour_client , strlen(retour_client)) < 0) {
+          puts("Send failed");
+          break;
+        }
+      }
+    }
+
   }
   
   close(sock);
