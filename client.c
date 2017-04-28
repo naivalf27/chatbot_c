@@ -40,7 +40,7 @@ int main(int argc , char *argv[]) {
       return 1;
     }
 
-    if( read(sock, server_reply, sizeof(server_reply)) < 0) {
+    if( read(sock, server_reply, sizeof(server_reply)) <= 0) {
       puts("recv failed");
       break;
     }

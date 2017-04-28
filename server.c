@@ -6,6 +6,7 @@
 #include <arpa/inet.h> //inet_addr
 #include <unistd.h>    //write
 #include <pthread.h> //for threading , link with lpthread
+#include <signal.h>
  
 
 typedef char bool;
@@ -14,14 +15,28 @@ typedef char bool;
 
 //the thread function
 void *connection_handler(void *);
-
+void intHandler(int);
 char* bot(const char *);
 bool equal(const char *,const char *);
 
+struct thread_args {
+  pthread_t thread;
+  int *sock;
+  int index;
+};
+
+struct thread_args* threads;
+int position;
 
 int main(int argc , char *argv[]) {
   int socket_desc , client_sock , c , *new_sock;
   struct sockaddr_in server , client;
+
+  signal(SIGINT, intHandler);
+
+  int nbThread = 5; // A remplir avec ton nombre de threads
+  threads = (struct thread_args*)malloc(nbThread*sizeof(struct thread_args));
+  position = 0;
    
   //Create socket
   socket_desc = socket(AF_INET , SOCK_STREAM , 0);
@@ -51,14 +66,25 @@ int main(int argc , char *argv[]) {
   c = sizeof(struct sockaddr_in);
   while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) ) {
     puts("Connection accepted");
-     
-    pthread_t sniffer_thread;
     new_sock = malloc(1);
     *new_sock = client_sock;
-     
-    if( pthread_create( &sniffer_thread , NULL ,  connection_handler , (void*) new_sock) < 0) {
-        perror("could not create thread");
-        return 1;
+
+
+
+    if (position < nbThread) {
+      struct thread_args *args = malloc(sizeof *args);
+      if (args != NULL)
+      {
+        args->sock = new_sock;
+        args->index = position;
+
+        if( pthread_create( &(args->thread) , NULL ,  connection_handler , args) < 0) {
+          perror("could not create thread");
+          return 1;
+        }
+        threads[position] = *args;
+        position += 1;
+      }
     }
     puts("Handler assigned");
   }
@@ -70,16 +96,38 @@ int main(int argc , char *argv[]) {
    
   return 0;
 }
+
+void intHandler(int dummy) {
+  printf("%s\n", "Ctrl+c");
+    for (int i = 0; i<position; i++) {
+      struct thread_args args = threads[i];
+      pthread_t thread = args.thread;
+      printf( "%p\n", args.thread );
+      int sock = *(int*)args.sock;
+      printf("sock = %d\n", sock);
+      fflush(stdout);
+      close(sock);
+      pthread_cancel(thread);
+      pthread_join(thread, NULL);
+    }
+    free(threads);
+    exit(0);
+}
  
 /*
  * This will handle connection for each client
  * */
-void *connection_handler(void *socket_desc) {
+void *connection_handler(void *context) {
   //Get the socket descriptor
-  int sock = *(int*)socket_desc;
+
+  struct thread_args *args = context;
+
+  int index = args->index;
+  int sock = *(int*)args->sock;
+  printf("sock = %d\n", sock);
+
   int read_size;
   char client_message[2000];
-
 
   //Receive a message from client
   while( read(sock, client_message, sizeof(client_message)) > 0) {
@@ -98,7 +146,7 @@ void *connection_handler(void *socket_desc) {
   
   close(sock);
   //Free the socket pointer
-  free(socket_desc);
+  free(args);
    
   return 0;
 }
