@@ -33,7 +33,7 @@ struct thread_args {
 	int *sock;
 	char type;
 	int index;
-	int relier;
+	int *relier;
 };
 
 struct thread_args* threads;
@@ -89,7 +89,7 @@ int main(int argc , char *argv[]) {
 				args->sock = new_sock;
 				args->index = position;
 				args->type = 'z';
-				args->relier = -1;
+				args->relier = 0;
 				
 				if( pthread_create( &(args->thread) , NULL ,  connection_handler , args) < 0) {
 					perror("could not create thread");
@@ -166,10 +166,11 @@ void *connection_handler(void *context) {
 				break;
 			} else {
 				int res = -1;
+				printf("relier = %p\n", threads[index].relier);
 				if (threads[index].type == '1'){
 					res = convClient(sock, client_message);
-				} else if (threads[index].type == '2' && threads[index].relier != -1){
-					res = convFleuriste(sock, threads[index].relier);
+				} else if (threads[index].type == '2' && threads[index].relier != 0){
+					res = convFleuriste(sock, *threads[index].relier);
 				} else {
 					res = init(sock, index, client_message);
 				}
@@ -211,7 +212,8 @@ int convClient(int sock, char* message) {
 
 int convFleuriste(int sock, int client) {
 	char * retour = "Message fleuriste";
-	if( write(sock , retour , strlen(retour)) < 0) {
+	printf("salut je suis un fleuriste");
+	if( write(client , retour , strlen(retour)) < 0) {
 		puts("Send failed");
 		return 0;
 	}
@@ -246,7 +248,18 @@ int init(int sock, int index,  char* message) {
 			}
 		}
 	} else if (message[0] == '[' && message[strlen(message)-1] == ']'){
-		threads[index].relier = message[1];
+		int count = 0;
+		for (int i = 0; i < position; i++) {
+				if (threads[i].type == '1'){
+					printf("%c\n", count+'0');
+					char c = count+'1';
+					if (c == message[1]){
+						threads[index].relier = threads[count].sock;
+					}
+					count = count + 1;
+				}
+			}
+		//threads[index].relier = message[1];
 		
 		char * retour = "Fleuriste connected";
 		
