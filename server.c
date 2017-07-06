@@ -8,7 +8,8 @@
 #include <pthread.h> //for threading , link with lpthread
 #include <signal.h>
 #include <errno.h>
-#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
+#include <sys/time.h>//FD_SET, FD_ISSET, FD_ZERO macros
+//#include <json/json.h>
 
 
 typedef char bool;
@@ -20,10 +21,11 @@ void *connection_handler(void *);
 void intHandler(int);
 
 int convClient(int sock, char* message);
-int convFleuriste(int sock, int client);
+int convFleuriste(int sock, int client, char* message);
 int init(int sock, int index,  char* message);
 
 char* bot(const char *);
+
 bool equal(const char *,const char *);
 void append(char* s, char c);
 char* concat(char* str1, char* str2);
@@ -36,7 +38,7 @@ struct thread_args {
 	int *relier;
 };
 
-struct thread_args* threads;
+struct thread_args* TAB_THREAD_ARGS;
 int position, socket_desc;
 
 int main(int argc , char *argv[]) {
@@ -46,7 +48,7 @@ int main(int argc , char *argv[]) {
 	signal(SIGINT, intHandler);
 	
 	int nbThread = 5; // A remplir avec ton nombre de threads
-	threads = (struct thread_args*)malloc(nbThread*sizeof(struct thread_args));
+	TAB_THREAD_ARGS = (struct thread_args*)malloc(nbThread*sizeof(struct thread_args));
 	position = 0;
 	
 	//Create socket
@@ -95,7 +97,7 @@ int main(int argc , char *argv[]) {
 					perror("could not create thread");
 					return 1;
 				}
-				threads[position] = *args;
+				TAB_THREAD_ARGS[position] = *args;
 				position += 1;
 			}
 		}
@@ -113,7 +115,7 @@ int main(int argc , char *argv[]) {
 void intHandler(int dummy) {
 	printf("%s\n", "Ctrl+c");
 	for (int i = 0; i<position; i++) {
-		struct thread_args args = threads[i];
+		struct thread_args args = TAB_THREAD_ARGS[i];
 		pthread_t thread = args.thread;
 		printf( "%p\n", args.thread );
 		int sock = *(int*)args.sock;
@@ -123,7 +125,7 @@ void intHandler(int dummy) {
 		pthread_join(thread, NULL);
 	}
 	close(socket_desc);
-	free(threads);
+	free(TAB_THREAD_ARGS);
 	fflush(stdout);
 	exit(0);
 }
@@ -166,11 +168,11 @@ void *connection_handler(void *context) {
 				break;
 			} else {
 				int res = -1;
-				printf("relier = %p\n", threads[index].relier);
-				if (threads[index].type == '1'){
+				printf("relier = %p\n", TAB_THREAD_ARGS[index].relier);
+				if (TAB_THREAD_ARGS[index].type == '1'){
 					res = convClient(sock, client_message);
-				} else if (threads[index].type == '2' && threads[index].relier != 0){
-					res = convFleuriste(sock, *threads[index].relier);
+				} else if (TAB_THREAD_ARGS[index].type == '2' && TAB_THREAD_ARGS[index].relier != 0){
+					res = convFleuriste(sock, *TAB_THREAD_ARGS[index].relier, client_message);
 				} else {
 					res = init(sock, index, client_message);
 				}
@@ -210,10 +212,8 @@ int convClient(int sock, char* message) {
 	return 1;
 }
 
-int convFleuriste(int sock, int client) {
-	char * retour = "Message fleuriste";
-	printf("salut je suis un fleuriste");
-	if( write(client , retour , strlen(retour)) < 0) {
+int convFleuriste(int sock, int client, char* message) {
+	if( write(client , message , strlen(message)) < 0) {
 		puts("Send failed");
 		return 0;
 	}
@@ -222,12 +222,12 @@ int convFleuriste(int sock, int client) {
 
 int init(int sock, int index,  char* message) {
 	if (message[0] == '{' && message[strlen(message)-1] == '}'){
-		threads[index].type = message[1];
+		TAB_THREAD_ARGS[index].type = message[1];
 		if (message[1] == '2'){
 			char * retour = "";
 			int count = 1;
 			for (int i = 0; i < position; i++) {
-				if (threads[i].type == '1'){
+				if (TAB_THREAD_ARGS[i].type == '1'){
 					char text[] = "    X. client X\n";
 					text[4] = count+'0';
 					count++;
@@ -250,11 +250,12 @@ int init(int sock, int index,  char* message) {
 	} else if (message[0] == '[' && message[strlen(message)-1] == ']'){
 		int count = 0;
 		for (int i = 0; i < position; i++) {
-				if (threads[i].type == '1'){
+				if (TAB_THREAD_ARGS[i].type == '1'){
 					printf("%c\n", count+'0');
 					char c = count+'1';
 					if (c == message[1]){
-						threads[index].relier = threads[count].sock;
+						TAB_THREAD_ARGS[count].relier = TAB_THREAD_ARGS[index].sock;
+						TAB_THREAD_ARGS[index].relier = TAB_THREAD_ARGS[count].sock;
 					}
 					count = count + 1;
 				}
