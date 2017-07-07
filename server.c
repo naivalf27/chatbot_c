@@ -20,9 +20,9 @@ typedef char bool;
 void *connection_handler(void *);
 void intHandler(int);
 
-int convClient(int sock, char* message);
-int convFleuriste(int sock, int client, char* message);
-int init(int sock, int index,  char* message);
+int convClient(int numThreadClient, char* message);
+int convFleuriste(int numThreadClient, char* message);
+int init(int numThreadClient,  char* message);
 
 char* bot(const char *);
 
@@ -30,16 +30,18 @@ bool equal(const char *,const char *);
 void append(char* s, char c);
 char* concat(char* str1, char* str2);
 
-struct thread_args {
+struct ThreadClient {
 	pthread_t thread;
-	int *sock;
-	char type;
-	int index;
-	int *relier;
+	int *socket;
+	char typeClient;
+	int numThread;
+	int *socketTied;
 };
 
-struct thread_args* TAB_THREAD_ARGS;
-int position, socket_desc;
+struct ThreadClient* TAB_THREAD_ARGS;
+int MAX_THREADS = 5;
+int INDEX_LAST_THREAD = 0;
+int SOCKET_SERVER;
 
 int main(int argc , char *argv[]) {
 	int client_sock , c , *new_sock;
@@ -47,14 +49,13 @@ int main(int argc , char *argv[]) {
 	
 	signal(SIGINT, intHandler);
 	
-	int nbThread = 5; // A remplir avec ton nombre de threads
-	TAB_THREAD_ARGS = (struct thread_args*)malloc(nbThread*sizeof(struct thread_args));
-	position = 0;
+	TAB_THREAD_ARGS = (struct ThreadClient*)malloc(MAX_THREADS*sizeof(struct ThreadClient));
+	INDEX_LAST_THREAD = 0;
 	
 	//Create socket
-	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-	if (socket_desc == -1) {
-		printf("Could not create socket");
+	SOCKET_SERVER = socket(AF_INET , SOCK_STREAM , 0);
+	if (SOCKET_SERVER == -1) {
+		puts("Could not create socket");
 	}
 	puts("Socket created");
 	
@@ -64,7 +65,7 @@ int main(int argc , char *argv[]) {
 	server.sin_port = htons( 8888 );
 	
 	//Bind
-	if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0) {
+	if( bind(SOCKET_SERVER,(struct sockaddr *)&server , sizeof(server)) < 0) {
 		//print the error message
 		perror("bind failed. Error");
 		return 1;
@@ -72,33 +73,33 @@ int main(int argc , char *argv[]) {
 	puts("bind done");
 	
 	//Listen
-	listen(socket_desc , 3);
+	listen(SOCKET_SERVER , 3);
 	
 	//Accept and incoming connection
 	puts("Waiting for incoming connections...");
 	c = sizeof(struct sockaddr_in);
-	while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) ) {
+	while( (client_sock = accept(SOCKET_SERVER, (struct sockaddr *)&client, (socklen_t*)&c)) ) {
 		puts("Connection accepted");
 		new_sock = malloc(1);
 		*new_sock = client_sock;
 		
 		
 		
-		if (position < nbThread) {
-			struct thread_args *args = malloc(sizeof *args);
+		if (INDEX_LAST_THREAD < MAX_THREADS) {
+			struct ThreadClient *args = malloc(sizeof *args);
 			if (args != NULL)
 			{
-				args->sock = new_sock;
-				args->index = position;
-				args->type = 'z';
-				args->relier = 0;
+				args->socket = new_sock;
+				args->numThread = INDEX_LAST_THREAD;
+				args->typeClient = 'z';
+				args->socketTied = 0;
 				
 				if( pthread_create( &(args->thread) , NULL ,  connection_handler , args) < 0) {
 					perror("could not create thread");
 					return 1;
 				}
-				TAB_THREAD_ARGS[position] = *args;
-				position += 1;
+				TAB_THREAD_ARGS[INDEX_LAST_THREAD] = *args;
+				INDEX_LAST_THREAD += 1;
 			}
 		}
 		puts("Handler assigned");
@@ -114,17 +115,15 @@ int main(int argc , char *argv[]) {
 
 void intHandler(int dummy) {
 	printf("%s\n", "Ctrl+c");
-	for (int i = 0; i<position; i++) {
-		struct thread_args args = TAB_THREAD_ARGS[i];
+	for (int i = 0; i<INDEX_LAST_THREAD; i++) {
+		struct ThreadClient args = TAB_THREAD_ARGS[i];
 		pthread_t thread = args.thread;
-		printf( "%p\n", args.thread );
-		int sock = *(int*)args.sock;
-		printf("sock = %d\n", sock);
-		close(sock);
+		int socket = *(int*)args.socket;
+		close(socket);
 		pthread_cancel(thread);
 		pthread_join(thread, NULL);
 	}
-	close(socket_desc);
+	close(SOCKET_SERVER);
 	free(TAB_THREAD_ARGS);
 	fflush(stdout);
 	exit(0);
@@ -136,10 +135,10 @@ void intHandler(int dummy) {
 void *connection_handler(void *context) {
 	//Get the socket descriptor
 	
-	struct thread_args *args = context;
+	struct ThreadClient *args = context;
 	
-	int index = args->index;
-	int sock = *(int*)args->sock;
+	int numThread = args->numThread;
+	int socket = *(int*)args->socket;
 	
 	fd_set readfds;
 	int max_sd;
@@ -148,17 +147,17 @@ void *connection_handler(void *context) {
 	while(true) {
 		FD_ZERO(&readfds);
 		//add master socket to set
-		FD_SET(sock, &readfds);
-		max_sd = sock;
+		FD_SET(socket, &readfds);
+		max_sd = socket;
 		memset(client_message, 0, sizeof(client_message));
 		int activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL);
 		if ((activity < 0) && (errno!=EINTR))
 		{
-			printf("select error");
+			puts("select error");
 		}
 		
-		if (FD_ISSET(sock, &readfds)){
-			int result = read(sock, client_message, sizeof(client_message));
+		if (FD_ISSET(socket, &readfds)){
+			int result = read(socket, client_message, sizeof(client_message));
 			if( result < 0) {
 				puts("recv failed");
 				break;
@@ -168,13 +167,12 @@ void *connection_handler(void *context) {
 				break;
 			} else {
 				int res = -1;
-				printf("relier = %p\n", TAB_THREAD_ARGS[index].relier);
-				if (TAB_THREAD_ARGS[index].type == '1'){
-					res = convClient(sock, client_message);
-				} else if (TAB_THREAD_ARGS[index].type == '2' && TAB_THREAD_ARGS[index].relier != 0){
-					res = convFleuriste(sock, *TAB_THREAD_ARGS[index].relier, client_message);
+				if (TAB_THREAD_ARGS[numThread].typeClient == '1'){
+					res = convClient(numThread, client_message);
+				} else if (TAB_THREAD_ARGS[numThread].typeClient == '2' && TAB_THREAD_ARGS[numThread].socketTied != 0){
+					res = convFleuriste(numThread, client_message);
 				} else {
-					res = init(sock, index, client_message);
+					res = init(numThread, client_message);
 				}
 				if(res == 0){
 					break;
@@ -184,7 +182,7 @@ void *connection_handler(void *context) {
 		
 	}
 	
-	close(sock);
+	close(socket);
 	//Free the socket pointer
 	free(args);
 	
@@ -203,31 +201,44 @@ char* bot(const char* msg) {
 	return message;
 }
 
-int convClient(int sock, char* message) {
-	char *retour_client = bot(message);
-	if( write(sock , retour_client , strlen(retour_client)) < 0) {
+int convClient(int numThreadClient, char* message) {
+	struct ThreadClient args = TAB_THREAD_ARGS[numThreadClient];
+	
+	if (args.socketTied == 0) {
+		char *retour_client = bot(message);
+		if( write(*args.socket , retour_client , strlen(retour_client)) < 0) {
+			puts("Send failed");
+			return 0;
+		}
+	} else {
+		if( write(*args.socketTied , message , strlen(message)) < 0) {
+			puts("Send failed");
+			return 0;
+		}
+	}
+	return 1;
+}
+
+int convFleuriste(int numThreadClient, char* message) {
+	struct ThreadClient args = TAB_THREAD_ARGS[numThreadClient];
+	
+	if( write(*args.socketTied , message , strlen(message)) < 0) {
 		puts("Send failed");
 		return 0;
 	}
 	return 1;
 }
 
-int convFleuriste(int sock, int client, char* message) {
-	if( write(client , message , strlen(message)) < 0) {
-		puts("Send failed");
-		return 0;
-	}
-	return 1;
-}
-
-int init(int sock, int index,  char* message) {
+int init(int numThreadClient,  char* message) {
+	struct ThreadClient *args = &TAB_THREAD_ARGS[numThreadClient];
+	
 	if (message[0] == '{' && message[strlen(message)-1] == '}'){
-		TAB_THREAD_ARGS[index].type = message[1];
+		args->typeClient = message[1];
 		if (message[1] == '2'){
 			char * retour = "";
 			int count = 1;
-			for (int i = 0; i < position; i++) {
-				if (TAB_THREAD_ARGS[i].type == '1'){
+			for (int i = 0; i < INDEX_LAST_THREAD; i++) {
+				if (TAB_THREAD_ARGS[i].typeClient == '1'){
 					char text[] = "    X. client X\n";
 					text[4] = count+'0';
 					count++;
@@ -235,27 +246,26 @@ int init(int sock, int index,  char* message) {
 					retour = concat(retour, text);
 				}
 			}
-			if( write(sock , retour , strlen(retour)) < 0) {
+			if( write(*(args->socket) , retour , strlen(retour)) < 0) {
 				puts("Send failed");
 				return 0;
 			}
 		} else {
 			char * retour = "Client connected";
 			
-			if( write(sock , retour , strlen(retour)) < 0) {
+			if( write(*(args->socket) , retour , strlen(retour)) < 0) {
 				puts("Send failed");
 				return 0;
 			}
 		}
 	} else if (message[0] == '[' && message[strlen(message)-1] == ']'){
 		int count = 0;
-		for (int i = 0; i < position; i++) {
-				if (TAB_THREAD_ARGS[i].type == '1'){
-					printf("%c\n", count+'0');
+		for (int i = 0; i < INDEX_LAST_THREAD; i++) {
+				if (TAB_THREAD_ARGS[i].typeClient == '1'){
 					char c = count+'1';
 					if (c == message[1]){
-						TAB_THREAD_ARGS[count].relier = TAB_THREAD_ARGS[index].sock;
-						TAB_THREAD_ARGS[index].relier = TAB_THREAD_ARGS[count].sock;
+						TAB_THREAD_ARGS[count].socketTied = args->socket;
+						args->socketTied = TAB_THREAD_ARGS[count].socket;
 					}
 					count = count + 1;
 				}
@@ -264,7 +274,7 @@ int init(int sock, int index,  char* message) {
 		
 		char * retour = "Fleuriste connected";
 		
-		if( write(sock , retour , strlen(retour)) < 0) {
+		if( write(*(args->socket) , retour , strlen(retour)) < 0) {
 			puts("Send failed");
 			return 0;
 		}
