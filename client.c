@@ -32,36 +32,34 @@ char typeClient() {
 	return type;
 }
 
+int SOCKET_CLIENT;
+
 int initClient(char type){
-	int sock;
 	struct sockaddr_in server;
 	char message[1000] , server_reply[2000];
 	fd_set readfds;
 	int max_sd;
 	
 	//Create socket
-	sock = socket(AF_INET , SOCK_STREAM , 0);
-	if (sock == -1) {
+	SOCKET_CLIENT = socket(AF_INET , SOCK_STREAM , 0);
+	if (SOCKET_CLIENT == -1) {
 		printf("Could not create socket");
 	}
-	puts("Socket created");
 	
 	server.sin_addr.s_addr = inet_addr("127.0.0.1");
 	server.sin_family = AF_INET;
 	server.sin_port = htons( 8888 );
 	
 	//Connect to remote server
-	if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0) {
+	if (connect(SOCKET_CLIENT , (struct sockaddr *)&server , sizeof(server)) < 0) {
 		perror("connect failed. Error");
 		return 1;
 	}
 	
-	puts("Connected\n");
-	
 	char initMessage[128] = "{";
 	append(initMessage, type);
 	append(initMessage, '}');
-	if( write(sock , initMessage , sizeof(initMessage)) < 0) {
+	if( write(SOCKET_CLIENT , initMessage , sizeof(initMessage)) < 0) {
 		puts("Init fail");
 		return 1;
 	}
@@ -72,10 +70,10 @@ int initClient(char type){
 	while(1) {
 		FD_ZERO(&readfds);
 		//add master socket to set
-		FD_SET(sock, &readfds);
+		FD_SET(SOCKET_CLIENT, &readfds);
 		FD_SET(fileno(stdin), &readfds);
 		
-		max_sd = (sock > fileno(stdin))?sock:fileno(stdin);
+		max_sd = (SOCKET_CLIENT > fileno(stdin))?SOCKET_CLIENT:fileno(stdin);
 		
 		memset(message, 0, sizeof(message));
 		memset(server_reply, 0, sizeof(server_reply));
@@ -92,14 +90,14 @@ int initClient(char type){
 				puts("fgets failed");
 				break;
 			}
-			if( write(sock , message , sizeof(message)) < 0) {
+			if( write(SOCKET_CLIENT , message , sizeof(message)) < 0) {
 				puts("Send failed");
 				break;
 			}
 		}
 		
-		if (FD_ISSET(sock, &readfds)){
-			int result = read(sock, server_reply, sizeof(server_reply));
+		if (FD_ISSET(SOCKET_CLIENT, &readfds)){
+			int result = read(SOCKET_CLIENT, server_reply, sizeof(server_reply));
 			if( result < 0) {
 				puts("recv failed");
 				break;
@@ -118,19 +116,19 @@ int initClient(char type){
 					char initMessage[128] = "[";
 					append(initMessage, c);
 					append(initMessage, ']');
-					if( write(sock , initMessage , sizeof(initMessage)) < 0) {
+					if( write(SOCKET_CLIENT , initMessage , sizeof(initMessage)) < 0) {
 						puts("Init fail");
 						return 1;
 					}
 					
 				} else {
-					printf("Server reply :       %s\n", server_reply);
+					printf("|----> %s\n", server_reply);
 				}
 			}
 		}
 	}
 	
-	close(sock);
+	close(SOCKET_CLIENT);
 	return 0;
 }
 

@@ -16,6 +16,7 @@ typedef char bool;
 #define true 1
 #define false 0
 
+
 //the thread function
 void *connection_handler(void *);
 void intHandler(int);
@@ -27,7 +28,6 @@ int init(int numThreadClient,  char* message);
 char* bot(const char *);
 
 bool equal(const char *,const char *);
-void append(char* s, char c);
 char* concat(char* str1, char* str2);
 
 struct ThreadClient {
@@ -115,13 +115,10 @@ int main(int argc , char *argv[]) {
 
 void intHandler(int dummy) {
 	printf("%s\n", "Ctrl+c");
-	for (int i = 0; i<INDEX_LAST_THREAD; i++) {
-		struct ThreadClient args = TAB_THREAD_ARGS[i];
-		pthread_t thread = args.thread;
-		int socket = *(int*)args.socket;
-		close(socket);
-		pthread_cancel(thread);
-		pthread_join(thread, NULL);
+	for (int i = 0; i<INDEX_LAST_THREAD; i++) {// fermeture de tout les thread & socket ouvert
+		close(*TAB_THREAD_ARGS[i].socket);
+		pthread_cancel(TAB_THREAD_ARGS[i].thread);
+		pthread_join(TAB_THREAD_ARGS[i].thread, NULL);
 	}
 	close(SOCKET_SERVER);
 	free(TAB_THREAD_ARGS);
@@ -138,7 +135,7 @@ void *connection_handler(void *context) {
 	struct ThreadClient *args = context;
 	
 	int numThread = args->numThread;
-	int socket = *(int*)args->socket;
+	int socket = *(args->socket);
 	
 	fd_set readfds;
 	int max_sd;
@@ -167,9 +164,9 @@ void *connection_handler(void *context) {
 				break;
 			} else {
 				int res = -1;
-				if (TAB_THREAD_ARGS[numThread].typeClient == '1'){
+				if (TAB_THREAD_ARGS[numThread].typeClient == '1'){// si c'est un client
 					res = convClient(numThread, client_message);
-				} else if (TAB_THREAD_ARGS[numThread].typeClient == '2' && TAB_THREAD_ARGS[numThread].socketTied != 0){
+				} else if (TAB_THREAD_ARGS[numThread].typeClient == '2' && TAB_THREAD_ARGS[numThread].socketTied != 0){// si c'est un fleuriste et qu'il n'est pas encore relier a un client
 					res = convFleuriste(numThread, client_message);
 				} else {
 					res = init(numThread, client_message);
@@ -191,8 +188,6 @@ void *connection_handler(void *context) {
 
 char* bot(const char* msg) {
 	char *message;
-	// memset(message, 0, sizeof(message));
-	// strcpy(message, "il faut faire ça");
 	if(equal(msg,"salut ça va ?")){
 		message = "oui et toi ?";
 	} else {
@@ -202,16 +197,16 @@ char* bot(const char* msg) {
 }
 
 int convClient(int numThreadClient, char* message) {
-	struct ThreadClient args = TAB_THREAD_ARGS[numThreadClient];
+	struct ThreadClient *args = &TAB_THREAD_ARGS[numThreadClient];
 	
-	if (args.socketTied == 0) {
+	if (args->socketTied == 0) {//Si le client n'est pas relier à un fleuriste
 		char *retour_client = bot(message);
-		if( write(*args.socket , retour_client , strlen(retour_client)) < 0) {
+		if( write(*(args->socket) , retour_client , strlen(retour_client)) < 0) {
 			puts("Send failed");
 			return 0;
 		}
-	} else {
-		if( write(*args.socketTied , message , strlen(message)) < 0) {
+	} else {// si le client est relier a un fleuriste
+		if( write(*(args->socketTied) , message , strlen(message)) < 0) {
 			puts("Send failed");
 			return 0;
 		}
@@ -220,9 +215,9 @@ int convClient(int numThreadClient, char* message) {
 }
 
 int convFleuriste(int numThreadClient, char* message) {
-	struct ThreadClient args = TAB_THREAD_ARGS[numThreadClient];
+	struct ThreadClient *args = &TAB_THREAD_ARGS[numThreadClient];
 	
-	if( write(*args.socketTied , message , strlen(message)) < 0) {
+	if( write(*(args->socketTied) , message , strlen(message)) < 0) {
 		puts("Send failed");
 		return 0;
 	}
@@ -238,7 +233,7 @@ int init(int numThreadClient,  char* message) {
 			char * retour = "";
 			int count = 1;
 			for (int i = 0; i < INDEX_LAST_THREAD; i++) {
-				if (TAB_THREAD_ARGS[i].typeClient == '1'){
+				if (TAB_THREAD_ARGS[i].typeClient == '1'){// si c'est un client
 					char text[] = "    X. client X\n";
 					text[4] = count+'0';
 					count++;
@@ -261,7 +256,7 @@ int init(int numThreadClient,  char* message) {
 	} else if (message[0] == '[' && message[strlen(message)-1] == ']'){
 		int count = 0;
 		for (int i = 0; i < INDEX_LAST_THREAD; i++) {
-				if (TAB_THREAD_ARGS[i].typeClient == '1'){
+				if (TAB_THREAD_ARGS[i].typeClient == '1'){//si c'est un client
 					char c = count+'1';
 					if (c == message[1]){
 						TAB_THREAD_ARGS[count].socketTied = args->socket;
@@ -270,8 +265,6 @@ int init(int numThreadClient,  char* message) {
 					count = count + 1;
 				}
 			}
-		//threads[index].relier = message[1];
-		
 		char * retour = "Fleuriste connected";
 		
 		if( write(*(args->socket) , retour , strlen(retour)) < 0) {
@@ -291,16 +284,9 @@ bool equal(const char *a,const char *b)
 	for (unsigned i = 0; i < len; i += 1)
 	{
 		if (a[i] != b[i])
-			return false; /* strings are not equal */
+			return false;
 	}
 	return true;
-}
-
-void append(char* s, char c)
-{
-	int len = strlen(s);
-	s[len] = c;
-	s[len+1] = '\0';
 }
 
 char* concat(char* str1, char* str2){
