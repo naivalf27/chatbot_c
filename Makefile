@@ -5,9 +5,9 @@ start_server: serv
 
 start_client: cli
 	./client.out
-	
+
 serv: server.c
-	gcc server.c -o server.out -lpthread
+	gcc -g -Wall -I/usr/include/libxml2 server.c -o server.out -lpthread -lxml2
 
 cli: client.c
 	gcc client.c -o client.out
