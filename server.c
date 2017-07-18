@@ -24,8 +24,6 @@ typedef void (*fct_browse)(xmlNodePtr, char * message);
 #define false 0
 #define BAD_CAST (xmlChar *)
 
-
-//xmlNodePtr get_produit_by_ref(xmlDocPtr doc, const char *ref);
 xmlNodePtr create_node_client(char * type, char *clientDiscussion);
 xmlNodePtr create_node_bot(char * type, char *chatBotResponse);
 
@@ -155,28 +153,17 @@ char * convert_xmlChar(xmlChar * xml){
 	char * returnMessage =malloc(xmlStrlen(xml) * 1024);
 	for(int i = 0; i < xmlStrlen(xml); i++) {
 		returnMessage[i] = xml[i];
-		//printf("contenu[%d] = %c\n", i, contenu[i]);
 	}
-	// puts("Message converti");
-	// puts(returnMessage);
-	//printf("\nJe suis converti %s ", returnMessage);
 	return returnMessage;
 }
 
 void clear_response(){
-	//printf("\nDébut fonction clear_response");
-	//free(Response);
 	Response = malloc(sizeof(int));
 	if(Response != NULL && sizeof(Response) > 0){
-		//int size = sizeof(Response);
-		//printf("\nclear_response size response : %d", size);
-		//int length = strlen(Response);
-		//printf("\n Fonction clear_response, Début, Valeur Response et taille / longueur : %s %d %d", Response, size, length);
-	for(int i = 0; i < strlen(Response); i++) {
-		Response[i] = '\0';
-		//printf("contenu[%d] = %c\n", i, contenu[i]);
+		for(int i = 0; i < strlen(Response); i++) {
+			Response[i] = '\0';
+		}
 	}
-}
 }
 
 void prefix_search(xmlNodePtr noeud, char * message, fct_browse f) {
@@ -192,90 +179,51 @@ void prefix_search(xmlNodePtr noeud, char * message, fct_browse f) {
 char * prefix_search_compare(xmlNodePtr noeud, char * message, fct_compare f) {
     xmlNodePtr n;
 	  char * m;
-		//printf("\n Fonction début: prefix_search_compare");
     for (n = noeud; n != NULL; n = n->next) {
-			//printf("\n Fonction début boucle : valeur m et message  %s  %s", m, message);
         m = f(n, message);
-				//printf("\n Valeur de retour fonction prefix, valeur m et message : %s  %s", m, message);
-				//printf("\n Valeur de Response fonction prefix : %s", Response);
 
 				if(m != NoResult){
-					//printf("\n Je suis passé dans le break, valeur de Response et m : %s %s", Response, m);
 					Response = m;
 					break;
 				}
 	        else if ((n->type == XML_ELEMENT_NODE) && (n->children != NULL)) {
-						   //printf("\n Je suis passé dans le else if !");
 	             prefix_search_compare(n->children, message, f);
 	        }
 						else{
-							//printf("\n Je suis passé dans le else !");
 							Response = m;
 							return Response;
 						}
     }
-		//xmlFreeNode(n);
-		//printf("\n En dehors de la boucle, valeur de Response revoyé : %s", Response);
 		return Response;
 }
-
-// xmlNodePtr get_produit_by_ref(xmlDocPtr doc, const char *ref) {
-//     char *path;
-//     xmlNodePtr n = NULL;
-//     xmlXPathContextPtr ctxt;
-//     xmlXPathObjectPtr xpathRes;
-//
-//     xmlXPathInit();
-//     ctxt = xmlXPathNewContext(doc);
-//     if (-1 == asprintf(&path, "/dataset/greetings[@reference=\"%s\"]", ref)) {
-//         fprintf(stderr, "asprintf failed\n");
-//         return NULL;
-//     }
-//     if (NULL != ctxt && NULL != path) {
-//         if (NULL != (xpathRes = xmlXPathEvalExpression(BAD_CAST path, ctxt)) && XPATH_NODESET == xpathRes->type && 1 == xpathRes->nodesetval->nodeNr) {
-//             n = xpathRes->nodesetval->nodeTab[0];
-//         }
-//         free(path);
-//         xmlXPathFreeObject(xpathRes);
-//         xmlXPathFreeContext(ctxt);
-//     }
-//
-//     return n;
-// }
 
 char * compare_node(xmlNodePtr noeud, char * message) {
     if (noeud->type == XML_ELEMENT_NODE) {
         if (noeud->children != NULL && noeud->children->type == XML_TEXT_NODE) {
 
             xmlChar *contenu = xmlNodeGetContent(noeud);
-						//xmlChar * xmlGetProp(xmlNodePtr node, const xmlChar * name);
 
 						char * t = strdup(message);
+
  						//Conversion du message en xmlChar
  						xmlChar * mess = 	xmlCharStrndup(t, strlen(message)-1);
 
 						//test de la chaine saisie par l'utilisateur avec les données du fichier xml
 						int	test = xmlStrEqual(contenu, mess);
 						if(test == 1){
-							xmlNodePtr next = noeud->children;
+							xmlNodePtr next = noeud->next->children;
 							contenu = xmlNodeGetContent(next);
 
 							printf("\n Message trouvé %s", contenu);
-							//xmlFreeNode(next);
-							//xmlFree(mess);
-							//printf("\n %d",test);
 
 							char* testChar = convert_xmlChar(contenu);
 							Response = testChar;
 							return Response;
 						}
-						//xmlFree(contenu);
-						//xmlFree(mess);
-						//printf("%d",test);
+
 						return NoResult;
         }
     }
-		//printf("\n Fonction compare_node, je passé en dehors du if");
 		return NoResult;
 }
 
@@ -298,19 +246,11 @@ void print_node(xmlNodePtr noeud, char * message) {
 
 						printf("%d\n", test);
 						if(test == 1){
-							//puts("Trouvé");
 						}
 						else{
-							//puts("Pas trouvé");
-							//puts(Response);
 							Response = NoResult;
-            //xmlFree(contenu);
 					}
         }
-				// else {
-        //     //printf("%s\n", chemin);
-        // }
-        //xmlFree(chemin);
     }
 }
 
@@ -433,8 +373,6 @@ void *connection_handler(void *context) {
 }
 
 char * convert_constchar(const char * msg){
-	//printf("\nDébut fonction convert_constchar");
-	//int length = strlen(msg);
 	char * newChar = malloc(sizeof(msg) * 1024);
 	//printf("\n Fonction Convert_constchar, Valeur msg et taille : %s %d", msg, length);
 	for(int i = 0; i < strlen(msg)-1; i++){
@@ -444,31 +382,21 @@ char * convert_constchar(const char * msg){
 }
 
 char* bot(const char* msg) {
-	//printf("\n Fonction Bot, Début, valeur de msg : %s", msg);
 	char *message;
 
   clear_response();
+
 	if(Flag == 0){
 		char * tt = strdup(msg);
   	message = prefix_search_compare(root, tt, compare_node);
-
-		// if(message == Command){
-		// 	int result = LaunchDataSet();
-		// 	if(result == EXIT_SUCCESS){
-		// 		puts("Opening xml file : Complete.");
-		// 	}
-		// 		else{
-		// 			puts("Opening xml file : Error.");
-		// 		}
-		// 	return message = "Réouverture du fichier Xml ... OK.";
-		// }
 			if(message == NoResult){
 		 	 message = "Je n'ai pas compris, voulez-vous améliorer mes réponses en précisant quel est le context de votre précédente réponse ? oui / non";
 			 Flag = 1;
 		  }
 			printf("\n\n");
 			return message;
-}
+		}
+
 	else if(Flag == 1){
 		char * tt = convert_constchar(msg);
 		//printf("\n flag 1");
@@ -502,13 +430,21 @@ char* bot(const char* msg) {
 					message = "Merci pour votre aide, je me sens plus intelligent désormais !";
 					xmlKeepBlanksDefault(0);
 					Flag = 0;
+					if (clientResponse[strlen(clientResponse)-1] == '\n') {
+						clientResponse[strlen(clientResponse)-1] = '\0';
+					}
+					if (Type[strlen(Type)-1] == '\n') {
+						Type[strlen(Type)-1] = '\0';
+					}
 					xmlNodePtr new_node_client = create_node_client(Type, clientResponse);
 					if (new_node_client) {
 							xmlAddChildList(root, new_node_client);
 							printf("\nAdd Node Client : Complete.");
-							//xmlFreeNode(new_node_client);
 					}
 
+					if (botResponse[strlen(botResponse)-1] == '\n') {
+						botResponse[strlen(botResponse)-1] = '\0';
+					}
 					xmlNodePtr new_node_bot = create_node_bot(Type, botResponse);
 					if (new_node_client) {
 							xmlAddChildList(root, new_node_bot);
@@ -516,9 +452,8 @@ char* bot(const char* msg) {
 							int retour = xmlSaveFormatFile("xml/dataset.xml", doc, 1);
 							if(retour != -1){
 								printf("\nSave Xml file : Complete.");
-								xmlDocFormatDump(stdout, doc, 1);
+								//xmlDocFormatDump(stdout, doc, 1);
 							}
-							//xmlFreeNode(new_node_bot);
 					}
 					int result = LaunchDataSet();
 					if(result == EXIT_SUCCESS){
