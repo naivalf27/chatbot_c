@@ -32,4 +32,15 @@
   <greetings>tp tp tp</greetings>
   <command>open</command>
   <command>open</command>
+  <sales>Comment je peux acheter des fleurs ?</sales>
+  <sales>Quels type de fleurs voulez vous ?</sales>
+  <sales>J'aimerais acheter des fleurs</sales>
+  <sales>Quels type de fleurs voulez vous ?</sales>
+  <sales>Quels type avez vous ?</sales>
+  <sales>Nous avons des roses, des tulipes, des marguerites, du lilas et du muguets</sales>
+  <sales>Je vais prendre des roses</sales>
+  <sales>Combien en voulez-vous ?
+</sales>
+  <sales>Je vais en prendre 5</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
 </intent>
