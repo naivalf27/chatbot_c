@@ -5,42 +5,46 @@
   <greetings>Hello</greetings>
   <greetings>Hi</greetings>
   <greetings>Yop</greetings>
-  <greetings>Plop</greetings>
-  <greetings>Bonjour</greetings>
   <greetings>Salut</greetings>
   <greetings>slt</greetings>
-  <greetings>salut mec</greetings>
-  <greetings>test</greetings>
-  <greetings>test</greetings>
-  <greetings>test lol</greetings>
-  <greetings>test lol</greetings>
-  <greetings>test lolilol</greetings>
-  <greetings>test test</greetings>
-  <greetings>ty</greetings>
-  <greetings>ty too</greetings>
-  <greetings>ty</greetings>
-  <greetings>ty too</greetings>
-  <greetings>tty</greetings>
-  <greetings>tty tooo</greetings>
-  <greetings>toto</greetings>
-  <greetings>toto toto</greetings>
-  <test>tyty</test>
-  <test>titi</test>
-  <trololol>trololol</trololol>
-  <trololol>trololili</trololol>
-  <greetings>tp</greetings>
-  <greetings>tp tp tp</greetings>
-  <command>open</command>
-  <command>open</command>
   <sales>Comment je peux acheter des fleurs ?</sales>
-  <sales>Quels type de fleurs voulez vous ?</sales>
+  <sales>Quels type de fleurs voulez-vous ?</sales>
   <sales>J'aimerais acheter des fleurs</sales>
-  <sales>Quels type de fleurs voulez vous ?</sales>
-  <sales>Quels type avez vous ?</sales>
+  <sales>Quels type de fleurs voulez-vous ?</sales>
+  <sales>Je voudrais acheter des fleurs</sales>
+  <sales>Quels type de fleurs voulez-vous ?</sales>
+  <sales>Quels type avez-vous ?</sales>
   <sales>Nous avons des roses, des tulipes, des marguerites, du lilas et du muguets</sales>
   <sales>Je vais prendre des roses</sales>
-  <sales>Combien en voulez-vous ?
-</sales>
+  <sales>Combien en voulez-vous ?</sales>
+  <sales>Je vais prendre des tulipes</sales>
+  <sales>Combien en voulez-vous ?</sales>
+  <sales>Je vais prendre des marguerites</sales>
+  <sales>Combien en voulez-vous ?</sales>
+  <sales>Je vais prendre du lilas</sales>
+  <sales>Combien en voulez-vous ?</sales>
+  <sales>Je vais prendre du muguets</sales>
+  <sales>Combien en voulez-vous ?</sales>
+  <sales>Je vais en prendre 1</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
+  <sales>Je vais en prendre 2</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
+  <sales>Je vais en prendre 3</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
+  <sales>Je vais en prendre 4</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
   <sales>Je vais en prendre 5</sales>
   <sales>Très bien je vous les envoies. Merci de votre commande</sales>
+  <sales>Je vais en prendre 6</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
+  <sales>Je vais en prendre 7</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
+  <sales>Je vais en prendre 8</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
+  <sales>Je vais en prendre 9</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
+  <sales>Je vais en prendre 10</sales>
+  <sales>Très bien je vous les envoies. Merci de votre commande</sales>
+  <greetings>Bonjour</greetings>
+  <greetings>Bien le bonjour à vous cher client! Que puis-je pour vous ?</greetings>
 </intent>
